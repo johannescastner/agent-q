@@ -11,6 +11,8 @@ parameters; the real-loop waits are infra configuration — they are deliberatel
 `dispatch_action` is TOTAL over ActionType: an unhandled/future type raises `UnhandledActionTypeError`
 rather than silently no-opping.
 """
+from typing import Any
+
 from agentq.core.models.models import Action, ActionType
 from agentq.core.skills.click_using_selector import click
 from agentq.core.skills.enter_text_and_click import enter_text_and_click
@@ -34,7 +36,7 @@ async def dispatch_action(
     click_wait: float,
     enter_text_and_click_wait: float,
     captcha_wait: float,
-):
+) -> Any:
     """Dispatch one typed `Action` to its browser skill and return the skill's result.
 
     The wait values are supplied by the CALLER (not defaulted here) so the MCTS search path and the

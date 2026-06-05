@@ -15,7 +15,6 @@ from agentq.core.mcts.core.base import Reasoner, SearchConfig, WorldModel
 from agentq.core.mcts.core.mcts import MCTS, MCTSResult
 from agentq.core.mcts.visualization.visualizer_client import visualize
 from agentq.core.models.models import (
-    ActionType,
     AgentQActorInput,
     AgentQActorOutput,
     AgentQCriticInput,
