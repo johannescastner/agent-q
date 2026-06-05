@@ -36,6 +36,7 @@ from agentq.core.skills.get_dom_with_content_type import get_dom_with_content_ty
 from agentq.core.skills.get_screenshot import get_screenshot
 from agentq.core.skills.get_url import geturl
 from agentq.core.skills.open_url import openurl
+from agentq.core.skills.solve_captcha import solve_captcha
 from agentq.core.web_driver.playwright import PlaywrightManager
 
 # ANSI color codes
@@ -130,6 +131,17 @@ class BrowserWorldModel(WorldModel[BrowserState, BrowserAction, str]):
             )
             # await wait_for_navigation()
             print(f"{CYAN}[DEBUG] Entered text and clicked element{RESET}")
+        elif action.type == ActionType.SOLVE_CAPTCHA:
+            await solve_captcha(
+                text_selector=f"[mmid='{action.text_element_mmid}']",
+                click_selector=f"[mmid='{action.click_element_mmid}']",
+                wait_before_click_execution=action.wait_before_click_execution or 2,
+            )
+            print(f"{CYAN}[DEBUG] Solved captcha{RESET}")
+        else:
+            raise ValueError(
+                f"Unhandled ActionType in execute_browser_action: {action.type}"
+            )
 
         try:
             new_dom = await self.get_current_dom()
