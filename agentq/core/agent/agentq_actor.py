@@ -8,10 +8,13 @@ from agentq.core.prompts.prompts import LLM_PROMPTS
 
 
 class AgentQActor(BaseAgent):
-    def __init__(self):
+    def __init__(self, store=None):
         self.name = "actor"
+        # agent-q Piece-4: when a shared CW memory store is injected, the user
+        # preference is read from it; otherwise the file fallback is used.
+        self.store = store
         self.ltm = None
-        self.ltm = self.__get_ltm()
+        self.ltm = self.__get_ltm(store)
         self.system_prompt = self.__modify_system_prompt(self.ltm)
         super().__init__(
             name=self.name,
@@ -22,8 +25,8 @@ class AgentQActor(BaseAgent):
         )
 
     @staticmethod
-    def __get_ltm():
-        return ltm.get_user_ltm()
+    def __get_ltm(store=None):
+        return ltm.get_user_ltm(store)
 
     def __modify_system_prompt(self, ltm):
         system_prompt: str = LLM_PROMPTS["AGENTQ_ACTOR_PROMPT"]
