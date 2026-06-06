@@ -30,6 +30,7 @@ from agentq.core.skills.dispatch import dispatch_action, UnhandledActionTypeErro
 from agentq.core.skills.get_dom_with_content_type import get_dom_with_content_type
 from agentq.core.skills.get_screenshot import get_screenshot
 from agentq.core.skills.get_url import geturl
+from agentq.core.memory.episode import persist_episode
 from agentq.core.web_driver.playwright import PlaywrightManager
 
 init(autoreset=True)
@@ -37,7 +38,10 @@ init(autoreset=True)
 
 class Orchestrator:
     def __init__(
-        self, state_to_agent_map: Dict[State, BaseAgent], eval_mode: bool = False
+        self,
+        state_to_agent_map: Dict[State, BaseAgent],
+        eval_mode: bool = False,
+        store=None,
     ):
         load_dotenv()
         self.state_to_agent_map = state_to_agent_map
@@ -46,6 +50,9 @@ class Orchestrator:
         self.shutdown_event = asyncio.Event()
         self.session_id = str(uuid.uuid4())
         self.memory = None
+        # agent-q Piece-4: optional shared CW memory store (a langgraph BaseStore).
+        # When present, each completed command is persisted as an episode.
+        self.store = store
 
     async def start(self):
         print("Starting orchestrator")
@@ -99,6 +106,18 @@ class Orchestrator:
             while self.memory.current_state != State.COMPLETED:
                 await loop.create_task(self._handle_state())
             self._print_final_response()
+
+            # agent-q Piece-4: persist this completed command as an episode to the
+            # shared CW memory store. FAIL-SOFT — a memory-write error must NEVER
+            # suppress the command's own result (it runs after the state loop and
+            # before the eval-mode return, in a narrow guard).
+            if self.store is not None:
+                try:
+                    persist_episode(
+                        self.store, self.memory, session_id=self.session_id
+                    )
+                except Exception as mem_err:
+                    print(f"episodic memory write skipped: {mem_err}")
 
             if self.eval_mode:
                 return self.memory.final_response

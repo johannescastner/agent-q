@@ -7,20 +7,28 @@ from agentq.core.agent.agentq_actor import AgentQActor
 from agentq.core.agent.agentq_critic import AgentQCritic
 from agentq.core.agent.browser_nav_agent import BrowserNavAgent
 from agentq.core.agent.planner_agent import PlannerAgent
+from agentq.core.memory.store import build_stores
 from agentq.core.models.models import State
 from agentq.core.orchestrator.orchestrator import Orchestrator
+
+# agent-q Piece-4: shared CW memory stores (fail-soft None → file LTM + no persist).
+_semantic_store, _episodic_store = build_stores()
 
 state_to_agent_map = {
     State.PLAN: PlannerAgent(),
     State.BROWSE: BrowserNavAgent(),
     State.AGENTQ_BASE: AgentQ(),
-    State.AGENTQ_ACTOR: AgentQActor(),
+    State.AGENTQ_ACTOR: AgentQActor(store=_semantic_store),
     State.AGENTQ_CRITIC: AgentQCritic(),
 }
 
 
 async def run_agent(command):
-    orchestrator = Orchestrator(state_to_agent_map=state_to_agent_map, eval_mode=True)
+    orchestrator = Orchestrator(
+        state_to_agent_map=state_to_agent_map,
+        eval_mode=True,
+        store=_episodic_store,
+    )
     await orchestrator.start()
     page: Page = await orchestrator.playwright_manager.get_current_page()
     await page.set_extra_http_headers({"User-Agent": "AgentQ-Bot"})
@@ -42,7 +50,9 @@ def run_agent_sync(command):
 
 
 async def main():
-    orchestrator = Orchestrator(state_to_agent_map=state_to_agent_map)
+    orchestrator = Orchestrator(
+        state_to_agent_map=state_to_agent_map, store=_episodic_store
+    )
     await orchestrator.start()
 
 
